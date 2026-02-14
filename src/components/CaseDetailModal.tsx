@@ -8,11 +8,6 @@ const ambulanceLabel: Record<string, string> = {
   pending: "Pending",
 };
 
-interface CaseDetailModalProps {
-  caseData: EmergencyCase | null;
-  onClose: () => void;
-}
-
 const DetailRow = ({ icon: Icon, label, value, valueClass }: { icon: any; label: string; value: string; valueClass?: string }) => (
   <div className="flex items-start gap-3 py-2 border-b border-border/50 last:border-0">
     <Icon className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
@@ -23,7 +18,7 @@ const DetailRow = ({ icon: Icon, label, value, valueClass }: { icon: any; label:
   </div>
 );
 
-const CaseDetailModal = ({ caseData, onClose }: CaseDetailModalProps) => {
+const CaseDetailModal = ({ caseData, onClose }: { caseData: EmergencyCase | null; onClose: () => void }) => {
   if (!caseData) return null;
   const sev = severityConfig[caseData.severity];
   const time = new Date(caseData.timeOfReport);
@@ -47,20 +42,47 @@ const CaseDetailModal = ({ caseData, onClose }: CaseDetailModalProps) => {
         </div>
 
         <div className="p-4 space-y-0">
+          {/* Shared info */}
+          <div className="mb-2">
+            <span className="text-[10px] uppercase tracking-wider text-primary font-semibold">Call Information</span>
+          </div>
           <DetailRow icon={Phone} label="Caller Phone" value={caseData.callerPhone} />
           <DetailRow icon={Clock} label="Time of Report" value={time.toLocaleString()} />
           <DetailRow icon={MapPin} label="Location" value={`${caseData.placeName} (${caseData.latitude.toFixed(4)}, ${caseData.longitude.toFixed(4)})`} />
-          <DetailRow icon={Users} label="Number of Patients" value={`${caseData.numberOfPatients}`} />
-          <DetailRow icon={User} label="Patient Age" value={`${caseData.patientAge} years`} />
-          <DetailRow icon={Stethoscope} label="Signs & Symptoms" value={caseData.signsAndSymptoms.join(", ")} />
-          <DetailRow icon={Brain} label="Level of Consciousness" value={caseData.levelOfConsciousness} />
-          <DetailRow icon={Wind} label="Breathing Status" value={caseData.breathingStatus} />
-          <DetailRow icon={Bone} label="Trauma History" value={caseData.traumaHistory} />
-          <DetailRow icon={Heart} label="Chronic Diseases" value={caseData.knownChronicDiseases.join(", ")} />
-          <DetailRow icon={Gauge} label="Pain Score" value={`${caseData.painScore}/10`} valueClass={caseData.painScore >= 8 ? "text-severity-critical" : caseData.painScore >= 5 ? "text-severity-severe" : "text-foreground"} />
-          <DetailRow icon={Hash} label="Severity Classification" value={sev.label} />
+          <DetailRow icon={Users} label="Number of Patients" value={`${caseData.patients.length}`} />
           <DetailRow icon={Ambulance} label="Ambulance Status" value={ambulanceLabel[caseData.ambulanceStatus] || caseData.ambulanceStatus} />
           <DetailRow icon={Building2} label="Assigned Hospital" value={caseData.assignedHospital || "Not yet assigned"} />
+
+          {/* Per-patient info */}
+          {caseData.patients.map((patient, idx) => {
+            const pSev = severityConfig[patient.severity];
+            return (
+              <div key={idx} className="mt-4 pt-3 border-t border-border">
+                <div className="flex items-center gap-2 mb-2">
+                  <User className="w-4 h-4 text-primary" />
+                  <span className="text-xs font-semibold text-foreground">Patient {idx + 1}</span>
+                  <span className={`${pSev.className} px-2 py-0.5 rounded text-[10px] uppercase tracking-wider`}>
+                    {pSev.emoji} {pSev.label}
+                  </span>
+                </div>
+                <div className="pl-1">
+                  <DetailRow icon={User} label="Age" value={`${patient.patientAge} years`} />
+                  <DetailRow icon={Stethoscope} label="Signs & Symptoms" value={patient.signsAndSymptoms.join(", ")} />
+                  <DetailRow icon={Brain} label="Level of Consciousness" value={patient.levelOfConsciousness} />
+                  <DetailRow icon={Wind} label="Breathing Status" value={patient.breathingStatus} />
+                  <DetailRow icon={Bone} label="Trauma History" value={patient.traumaHistory} />
+                  <DetailRow icon={Heart} label="Chronic Diseases" value={patient.knownChronicDiseases.join(", ")} />
+                  <DetailRow
+                    icon={Gauge}
+                    label="Pain Score"
+                    value={`${patient.painScore}/10`}
+                    valueClass={patient.painScore >= 8 ? "text-severity-critical" : patient.painScore >= 5 ? "text-severity-severe" : "text-foreground"}
+                  />
+                  <DetailRow icon={Hash} label="Severity" value={pSev.label} />
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

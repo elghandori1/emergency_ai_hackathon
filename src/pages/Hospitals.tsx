@@ -1,5 +1,5 @@
 import { mockHospitals } from "@/data/mockData";
-import { Building2, Bed, Heart, Brain, Baby, Bone, AlertTriangle } from "lucide-react";
+import { Building2, Bed, Heart, Brain, Baby, Bone, AlertTriangle, Scan, FlaskConical, Pill, Flame, Eye } from "lucide-react";
 
 const Hospitals = () => {
   const sorted = [...mockHospitals].sort((a, b) => b.occupancyPercentage - a.occupancyPercentage);
@@ -91,13 +91,19 @@ const Hospitals = () => {
                     { available: h.cardiology, label: "Cardio", icon: Heart },
                     { available: h.pediatrics, label: "Peds", icon: Baby },
                     { available: h.neurosurgery, label: "Neuro", icon: Brain },
+                    { available: h.radiology, label: "Radiology", icon: Scan },
+                    { available: h.laboratory, label: "Lab", icon: FlaskConical },
+                    { available: h.pharmacy, label: "Pharmacy", icon: Pill },
+                    { available: h.burnUnit, label: "Burn Unit", icon: Flame },
+                    { available: h.orthopedics, label: "Ortho", icon: Bone },
+                    { available: h.ophthalmology, label: "Ophthal", icon: Eye },
                   ].map((s) => (
                     <span
                       key={s.label}
                       className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium ${
                         s.available
                           ? "bg-severity-mild/10 text-severity-mild"
-                          : "bg-secondary text-muted-foreground"
+                          : "bg-severity-critical/10 text-severity-critical"
                       }`}
                     >
                       <s.icon className="w-3 h-3" />

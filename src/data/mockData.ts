@@ -1,5 +1,16 @@
 export type SeverityLevel = 'critical' | 'severe' | 'moderate' | 'mild';
 
+export interface Patient {
+  patientAge: number;
+  signsAndSymptoms: string[];
+  severity: SeverityLevel;
+  levelOfConsciousness: string;
+  breathingStatus: string;
+  traumaHistory: string;
+  knownChronicDiseases: string[];
+  painScore: number;
+}
+
 export interface EmergencyCase {
   id: string;
   timeOfReport: string;
@@ -7,10 +18,13 @@ export interface EmergencyCase {
   longitude: number;
   placeName: string;
   callerPhone: string;
+  patients: Patient[];
+  // convenience: overall severity is the worst among patients
+  severity: SeverityLevel;
+  // legacy compat fields (from first patient)
   numberOfPatients: number;
   patientAge: number;
   signsAndSymptoms: string[];
-  severity: SeverityLevel;
   levelOfConsciousness: string;
   breathingStatus: string;
   traumaHistory: string;
@@ -31,6 +45,12 @@ export interface Hospital {
   cardiology: boolean;
   pediatrics: boolean;
   neurosurgery: boolean;
+  radiology: boolean;
+  laboratory: boolean;
+  pharmacy: boolean;
+  burnUnit: boolean;
+  orthopedics: boolean;
+  ophthalmology: boolean;
   occupancyPercentage: number;
 }
 
@@ -91,19 +111,12 @@ function generatePhone(): string {
   return `${randomFrom(prefixes)}${Math.floor(10000000 + Math.random() * 90000000).toString().slice(0, 8)}`;
 }
 
-export const mockCases: EmergencyCase[] = Array.from({ length: 24 }, (_, i) => {
-  const place = places[i % places.length];
-  const sev: SeverityLevel = i < 4 ? 'critical' : i < 9 ? 'severe' : i < 16 ? 'moderate' : 'mild';
+const severityOrder: Record<SeverityLevel, number> = { critical: 0, severe: 1, moderate: 2, mild: 3 };
+
+function generatePatient(baseSev: SeverityLevel): Patient {
+  const sev = Math.random() > 0.6 ? baseSev : randomFrom(severities);
   const syms = Array.from({ length: 2 + Math.floor(Math.random() * 3) }, () => randomFrom(symptoms));
-  const numPatients = sev === 'critical' ? (Math.random() > 0.5 ? Math.floor(Math.random() * 3) + 2 : 1) : (Math.random() > 0.7 ? Math.floor(Math.random() * 4) + 2 : 1);
   return {
-    id: generateCaseId(),
-    timeOfReport: generateTime(Math.floor(Math.random() * 120)),
-    latitude: place.lat + (Math.random() - 0.5) * 0.02,
-    longitude: place.lng + (Math.random() - 0.5) * 0.02,
-    placeName: place.name,
-    callerPhone: generatePhone(),
-    numberOfPatients: numPatients,
     patientAge: 5 + Math.floor(Math.random() * 85),
     signsAndSymptoms: [...new Set(syms)],
     severity: sev,
@@ -112,44 +125,81 @@ export const mockCases: EmergencyCase[] = Array.from({ length: 24 }, (_, i) => {
     traumaHistory: Math.random() > 0.6 ? "Motor vehicle accident" : Math.random() > 0.5 ? "Fall from height" : "None",
     knownChronicDiseases: [randomFrom(chronicDiseases)],
     painScore: sev === 'critical' ? 8 + Math.floor(Math.random() * 3) : Math.floor(Math.random() * 10) + 1,
+  };
+}
+
+export const mockCases: EmergencyCase[] = Array.from({ length: 24 }, (_, i) => {
+  const place = places[i % places.length];
+  const baseSev: SeverityLevel = i < 4 ? 'critical' : i < 9 ? 'severe' : i < 16 ? 'moderate' : 'mild';
+  const numPatients = baseSev === 'critical' ? (Math.random() > 0.5 ? Math.floor(Math.random() * 3) + 2 : 1) : (Math.random() > 0.7 ? Math.floor(Math.random() * 4) + 2 : 1);
+  const patients = Array.from({ length: numPatients }, () => generatePatient(baseSev));
+  // overall severity = worst among patients
+  const overallSev = patients.reduce((worst, p) => severityOrder[p.severity] < severityOrder[worst] ? p.severity : worst, patients[0].severity);
+  const first = patients[0];
+  return {
+    id: generateCaseId(),
+    timeOfReport: generateTime(Math.floor(Math.random() * 120)),
+    latitude: place.lat + (Math.random() - 0.5) * 0.02,
+    longitude: place.lng + (Math.random() - 0.5) * 0.02,
+    placeName: place.name,
+    callerPhone: generatePhone(),
+    patients,
+    severity: overallSev,
+    numberOfPatients: numPatients,
+    patientAge: first.patientAge,
+    signsAndSymptoms: first.signsAndSymptoms,
+    levelOfConsciousness: first.levelOfConsciousness,
+    breathingStatus: first.breathingStatus,
+    traumaHistory: first.traumaHistory,
+    knownChronicDiseases: first.knownChronicDiseases,
+    painScore: first.painScore,
     ambulanceStatus: randomFrom(ambulanceStatuses),
     assignedHospital: Math.random() > 0.4 ? randomFrom(["CHU Mohammed VI", "Hôpital Ibn Tofail", "Clinique Al Farabi"]) : null,
   };
-}).sort((a, b) => {
-  const order = { critical: 0, severe: 1, moderate: 2, mild: 3 };
-  return order[a.severity] - order[b.severity];
-});
+}).sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
 
 export const mockHospitals: Hospital[] = [
   {
     id: "h1", name: "CHU Mohammed VI", latitude: 31.6340, longitude: -8.0150,
     emergencyBeds: { available: 3, total: 30 }, icuBeds: { available: 1, total: 12 },
-    traumaUnit: true, cardiology: true, pediatrics: true, neurosurgery: true, occupancyPercentage: 92,
+    traumaUnit: true, cardiology: true, pediatrics: true, neurosurgery: true,
+    radiology: true, laboratory: true, pharmacy: true, burnUnit: true, orthopedics: true, ophthalmology: true,
+    occupancyPercentage: 92,
   },
   {
     id: "h2", name: "Hôpital Ibn Tofail", latitude: 31.6280, longitude: -7.9920,
     emergencyBeds: { available: 8, total: 25 }, icuBeds: { available: 3, total: 8 },
-    traumaUnit: true, cardiology: true, pediatrics: true, neurosurgery: false, occupancyPercentage: 74,
+    traumaUnit: true, cardiology: true, pediatrics: true, neurosurgery: false,
+    radiology: true, laboratory: true, pharmacy: true, burnUnit: false, orthopedics: true, ophthalmology: false,
+    occupancyPercentage: 74,
   },
   {
     id: "h3", name: "Clinique Al Farabi", latitude: 31.6400, longitude: -8.0050,
     emergencyBeds: { available: 5, total: 15 }, icuBeds: { available: 2, total: 5 },
-    traumaUnit: false, cardiology: true, pediatrics: false, neurosurgery: false, occupancyPercentage: 65,
+    traumaUnit: false, cardiology: true, pediatrics: false, neurosurgery: false,
+    radiology: true, laboratory: true, pharmacy: true, burnUnit: false, orthopedics: false, ophthalmology: true,
+    occupancyPercentage: 65,
   },
   {
     id: "h4", name: "Hôpital Régional Essaouira", latitude: 31.5100, longitude: -9.7600,
     emergencyBeds: { available: 10, total: 20 }, icuBeds: { available: 4, total: 6 },
-    traumaUnit: true, cardiology: false, pediatrics: true, neurosurgery: false, occupancyPercentage: 48,
+    traumaUnit: true, cardiology: false, pediatrics: true, neurosurgery: false,
+    radiology: true, laboratory: true, pharmacy: true, burnUnit: false, orthopedics: true, ophthalmology: false,
+    occupancyPercentage: 48,
   },
   {
     id: "h5", name: "Hôpital Provincial Chichaoua", latitude: 31.5340, longitude: -8.7660,
     emergencyBeds: { available: 12, total: 18 }, icuBeds: { available: 5, total: 5 },
-    traumaUnit: false, cardiology: false, pediatrics: true, neurosurgery: false, occupancyPercentage: 35,
+    traumaUnit: false, cardiology: false, pediatrics: true, neurosurgery: false,
+    radiology: false, laboratory: true, pharmacy: true, burnUnit: false, orthopedics: false, ophthalmology: false,
+    occupancyPercentage: 35,
   },
   {
     id: "h6", name: "Clinique Yasmine", latitude: 31.6380, longitude: -7.9950,
     emergencyBeds: { available: 1, total: 10 }, icuBeds: { available: 0, total: 3 },
-    traumaUnit: false, cardiology: true, pediatrics: false, neurosurgery: false, occupancyPercentage: 96,
+    traumaUnit: false, cardiology: true, pediatrics: false, neurosurgery: false,
+    radiology: true, laboratory: false, pharmacy: true, burnUnit: false, orthopedics: false, ophthalmology: false,
+    occupancyPercentage: 96,
   },
 ];
 
