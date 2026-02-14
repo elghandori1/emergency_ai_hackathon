@@ -1,5 +1,6 @@
-import { EmergencyCase, severityConfig } from "@/data/mockData";
-import { Clock, MapPin, User, Stethoscope, Ambulance, Phone, Users } from "lucide-react";
+import { EmergencyCase, Hospital, severityConfig } from "@/data/mockData";
+import { estimateAmbulanceEtaMinutes } from "@/lib/geo";
+import { Clock, MapPin, Ambulance, Phone, Users, Building2 } from "lucide-react";
 
 const ambulanceLabel: Record<string, string> = {
   dispatched: "Dispatched",
@@ -10,14 +11,28 @@ const ambulanceLabel: Record<string, string> = {
 
 interface CaseCardProps {
   caseData: EmergencyCase;
+  hospitals: Hospital[];
   onClick: (c: EmergencyCase) => void;
   compact?: boolean;
 }
 
-const CaseCard = ({ caseData, onClick, compact }: CaseCardProps) => {
+const CaseCard = ({ caseData, hospitals, onClick }: CaseCardProps) => {
   const sev = severityConfig[caseData.severity];
   const time = new Date(caseData.timeOfReport);
   const minutesAgo = Math.floor((Date.now() - time.getTime()) / 60000);
+
+  const assignedHospital = caseData.assignedHospital
+    ? hospitals.find((h) => h.name === caseData.assignedHospital)
+    : null;
+  const etaMinutes =
+    assignedHospital && caseData.ambulanceStatus !== "on_scene"
+      ? estimateAmbulanceEtaMinutes(
+          caseData.latitude,
+          caseData.longitude,
+          assignedHospital.latitude,
+          assignedHospital.longitude
+        )
+      : null;
 
   return (
     <button
@@ -50,22 +65,27 @@ const CaseCard = ({ caseData, onClick, compact }: CaseCardProps) => {
           {caseData.numberOfPatients} patient{caseData.numberOfPatients > 1 ? 's' : ''}
         </div>
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <User className="w-3 h-3 flex-shrink-0" />
-          Age {caseData.patientAge}
+          <Building2 className="w-3 h-3 flex-shrink-0" />
+          {caseData.assignedHospital ?? "—"}
         </div>
-        {!compact && (
-          <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
-            <Stethoscope className="w-3 h-3 flex-shrink-0 mt-0.5" />
-            <span className="line-clamp-2">{caseData.signsAndSymptoms.join(", ")}</span>
-          </div>
-        )}
         <div className="flex items-center gap-1.5 text-xs">
           <Ambulance className="w-3 h-3 flex-shrink-0" />
-          <span className={`${
-            caseData.ambulanceStatus === 'pending' ? 'text-severity-severe' :
-            caseData.ambulanceStatus === 'on_scene' ? 'text-severity-mild' : 'text-primary'
-          }`}>
-            {ambulanceLabel[caseData.ambulanceStatus]}
+          <span
+            className={`${
+              caseData.ambulanceStatus === "pending"
+                ? "text-severity-severe"
+                : caseData.ambulanceStatus === "on_scene"
+                  ? "text-severity-mild"
+                  : "text-primary"
+            }`}
+          >
+            {caseData.ambulanceStatus === "on_scene"
+              ? ambulanceLabel.on_scene
+              : caseData.ambulanceStatus === "pending"
+                ? ambulanceLabel.pending
+                : etaMinutes != null
+                  ? `${ambulanceLabel[caseData.ambulanceStatus]} · ~${etaMinutes} min`
+                  : ambulanceLabel[caseData.ambulanceStatus]}
           </span>
         </div>
       </div>

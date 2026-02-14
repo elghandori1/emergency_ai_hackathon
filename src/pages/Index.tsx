@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { mockCases, severityConfig, type SeverityLevel } from "@/data/mockData";
+import { mockCases, mockHospitals, severityConfig, type SeverityLevel } from "@/data/mockData";
 import CaseCard from "@/components/CaseCard";
 import CaseDetailModal from "@/components/CaseDetailModal";
 import MapView from "@/components/MapView";
@@ -45,13 +45,13 @@ const Index = () => {
         {/* Cases list */}
         <div className="w-80 flex-shrink-0 border-r border-border overflow-auto p-3 space-y-2 bg-surface-overlay">
           {mockCases.map((c) => (
-            <CaseCard key={c.id} caseData={c} onClick={handleCaseClick} />
+            <CaseCard key={c.id} caseData={c} hospitals={mockHospitals} onClick={handleCaseClick} />
           ))}
         </div>
 
         {/* Map */}
         <div className="flex-1">
-          <MapView cases={mockCases} onCaseClick={handleCaseClick} />
+          <MapView cases={mockCases} hospitals={mockHospitals} onCaseClick={handleCaseClick} />
         </div>
       </div>
 
