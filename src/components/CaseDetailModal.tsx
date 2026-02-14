@@ -1,5 +1,12 @@
 import { EmergencyCase, severityConfig } from "@/data/mockData";
-import { X, MapPin, Clock, User, Stethoscope, Brain, Wind, Bone, Heart, Gauge, Hash, Ambulance, Building2 } from "lucide-react";
+import { X, MapPin, Clock, User, Stethoscope, Brain, Wind, Bone, Heart, Gauge, Hash, Ambulance, Building2, Phone, Users } from "lucide-react";
+
+const ambulanceLabel: Record<string, string> = {
+  dispatched: "Dispatched",
+  en_route: "En Route",
+  on_scene: "On Scene",
+  pending: "Pending",
+};
 
 interface CaseDetailModalProps {
   caseData: EmergencyCase | null;
@@ -40,8 +47,10 @@ const CaseDetailModal = ({ caseData, onClose }: CaseDetailModalProps) => {
         </div>
 
         <div className="p-4 space-y-0">
+          <DetailRow icon={Phone} label="Caller Phone" value={caseData.callerPhone} />
           <DetailRow icon={Clock} label="Time of Report" value={time.toLocaleString()} />
           <DetailRow icon={MapPin} label="Location" value={`${caseData.placeName} (${caseData.latitude.toFixed(4)}, ${caseData.longitude.toFixed(4)})`} />
+          <DetailRow icon={Users} label="Number of Patients" value={`${caseData.numberOfPatients}`} />
           <DetailRow icon={User} label="Patient Age" value={`${caseData.patientAge} years`} />
           <DetailRow icon={Stethoscope} label="Signs & Symptoms" value={caseData.signsAndSymptoms.join(", ")} />
           <DetailRow icon={Brain} label="Level of Consciousness" value={caseData.levelOfConsciousness} />
@@ -50,7 +59,7 @@ const CaseDetailModal = ({ caseData, onClose }: CaseDetailModalProps) => {
           <DetailRow icon={Heart} label="Chronic Diseases" value={caseData.knownChronicDiseases.join(", ")} />
           <DetailRow icon={Gauge} label="Pain Score" value={`${caseData.painScore}/10`} valueClass={caseData.painScore >= 8 ? "text-severity-critical" : caseData.painScore >= 5 ? "text-severity-severe" : "text-foreground"} />
           <DetailRow icon={Hash} label="Severity Classification" value={sev.label} />
-          <DetailRow icon={Ambulance} label="Ambulance Status" value={caseData.ambulanceStatus.replace('_', ' ')} />
+          <DetailRow icon={Ambulance} label="Ambulance Status" value={ambulanceLabel[caseData.ambulanceStatus] || caseData.ambulanceStatus} />
           <DetailRow icon={Building2} label="Assigned Hospital" value={caseData.assignedHospital || "Not yet assigned"} />
         </div>
       </div>

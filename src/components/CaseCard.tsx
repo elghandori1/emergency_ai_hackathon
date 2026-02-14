@@ -1,5 +1,12 @@
 import { EmergencyCase, severityConfig } from "@/data/mockData";
-import { Clock, MapPin, User, Stethoscope, Ambulance } from "lucide-react";
+import { Clock, MapPin, User, Stethoscope, Ambulance, Phone, Users } from "lucide-react";
+
+const ambulanceLabel: Record<string, string> = {
+  dispatched: "Dispatched",
+  en_route: "En Route",
+  on_scene: "On Scene",
+  pending: "Pending",
+};
 
 interface CaseCardProps {
   caseData: EmergencyCase;
@@ -35,6 +42,14 @@ const CaseCard = ({ caseData, onClick, compact }: CaseCardProps) => {
           <span className="truncate font-medium">{caseData.placeName}</span>
         </div>
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Phone className="w-3 h-3 flex-shrink-0" />
+          {caseData.callerPhone}
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Users className="w-3 h-3 flex-shrink-0" />
+          {caseData.numberOfPatients} patient{caseData.numberOfPatients > 1 ? 's' : ''}
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <User className="w-3 h-3 flex-shrink-0" />
           Age {caseData.patientAge}
         </div>
@@ -46,11 +61,11 @@ const CaseCard = ({ caseData, onClick, compact }: CaseCardProps) => {
         )}
         <div className="flex items-center gap-1.5 text-xs">
           <Ambulance className="w-3 h-3 flex-shrink-0" />
-          <span className={`capitalize ${
+          <span className={`${
             caseData.ambulanceStatus === 'pending' ? 'text-severity-severe' :
             caseData.ambulanceStatus === 'on_scene' ? 'text-severity-mild' : 'text-primary'
           }`}>
-            {caseData.ambulanceStatus.replace('_', ' ')}
+            {ambulanceLabel[caseData.ambulanceStatus]}
           </span>
         </div>
       </div>

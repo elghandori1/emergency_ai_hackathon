@@ -6,6 +6,8 @@ export interface EmergencyCase {
   latitude: number;
   longitude: number;
   placeName: string;
+  callerPhone: string;
+  numberOfPatients: number;
   patientAge: number;
   signsAndSymptoms: string[];
   severity: SeverityLevel;
@@ -84,16 +86,24 @@ function generateTime(minutesAgo: number): string {
   return d.toISOString();
 }
 
+function generatePhone(): string {
+  const prefixes = ['+212 6', '+212 7'];
+  return `${randomFrom(prefixes)}${Math.floor(10000000 + Math.random() * 90000000).toString().slice(0, 8)}`;
+}
+
 export const mockCases: EmergencyCase[] = Array.from({ length: 24 }, (_, i) => {
   const place = places[i % places.length];
   const sev: SeverityLevel = i < 4 ? 'critical' : i < 9 ? 'severe' : i < 16 ? 'moderate' : 'mild';
   const syms = Array.from({ length: 2 + Math.floor(Math.random() * 3) }, () => randomFrom(symptoms));
+  const numPatients = sev === 'critical' ? (Math.random() > 0.5 ? Math.floor(Math.random() * 3) + 2 : 1) : (Math.random() > 0.7 ? Math.floor(Math.random() * 4) + 2 : 1);
   return {
     id: generateCaseId(),
     timeOfReport: generateTime(Math.floor(Math.random() * 120)),
     latitude: place.lat + (Math.random() - 0.5) * 0.02,
     longitude: place.lng + (Math.random() - 0.5) * 0.02,
     placeName: place.name,
+    callerPhone: generatePhone(),
+    numberOfPatients: numPatients,
     patientAge: 5 + Math.floor(Math.random() * 85),
     signsAndSymptoms: [...new Set(syms)],
     severity: sev,
